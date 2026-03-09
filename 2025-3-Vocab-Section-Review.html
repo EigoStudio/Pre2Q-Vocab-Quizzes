@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2025-3 Eiken Pre-2 Vocab Master 60</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --primary-navy: #1a2a6c;
+            --accent-blue: #5da9e9;
+            --text-dark: #2c3e50;
+            --white: #ffffff;
+            --error-red: #e84118;
+            --success-green: #4cd137;
+            --base-font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "Yu Gothic", "Meiryo", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-navy);
+            color: var(--white);
+            width: 100%;
+            padding: 15px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 700px;
+            width: 90%;
+            margin: 20px 0;
+            background: var(--white);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .progress-bar { font-size: 0.9rem; color: var(--primary-navy); margin-bottom: 15px; font-weight: bold; }
+        .word-display { font-size: 2.5rem; font-weight: bold; color: var(--primary-navy); margin: 10px 0 30px 0; padding: 10px; border-bottom: 3px solid var(--bg-color); }
+        .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--accent-blue);
+            padding: 20px 10px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--base-font);
+            color: var(--primary-navy);
+        }
+
+        .choice-btn:hover { background-color: #f0f7ff; transform: translateY(-2px); }
+        .choice-btn.wrong { background-color: #fab1a0; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--primary-navy); font-weight: bold; }
+        .mistake-list { text-align: left; background: #fff5f5; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ffcdd2; }
+        .mistake-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ffebee; }
+        .action-btn { background-color: var(--primary-navy); color: white; border: none; padding: 15px 40px; border-radius: 40px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; font-family: var(--base-font); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>2025-3 準2級 語彙完全制覇 60問</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 60</div>
+    <div class="word-display" id="word-text">Loading...</div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.2em; font-weight: bold;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一度で正解：<span class="score-num" id="final-score">0</span> / 60問</div>
+    <div id="mistake-container" style="display:none;">
+        <h3 style="color: var(--error-red); margin-top:25px;">要復習リスト</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を送信</button>
+    <button class="action-btn" style="background-color: #95a5a6;" onclick="location.reload()">もう一度挑戦する</button>
+</div>
+
+<script>
+const GeorgiaInspiredQuiz = [
+    // --- 名詞 (Source 1: Q1-Q4) ---
+    {w:"skill", a:"技能", c:["忍耐","道具","場所"]},
+    {w:"audio", a:"音声", c:["記録","通信","再生"]},
+    {w:"joy", a:"喜び", c:["誇り","驚き","期待"]},
+    {w:"rent", a:"賃料", c:["税金","保険","給料"]},
+    {w:"shadow", a:"影", c:["景色","暗闇","輪郭"]},
+    {w:"talent", a:"才能", c:["性格","外見","名前"]},
+    {w:"pattern", a:"模様", c:["素材","形状","配色"]},
+    {w:"value", a:"価値", c:["重量","容積","速度"]},
+    {w:"impression", a:"印象", c:["評価","態度","決断"]},
+    {w:"survey", a:"調査", c:["実験","展示","練習"]},
+    {w:"requirement", a:"必要条件", c:["例外","提案","秘密"]},
+    {w:"purse", a:"ハンドバッグ", c:["手帳","名刺","鍵束"]},
+    {w:"statement", a:"声明", c:["噂話","助言","物語"]},
+    {w:"product", a:"製品", c:["原料","在庫","部品"]},
+    {w:"failure", a:"失敗", c:["協力","発展","勇気"]},
+    {w:"journey", a:"旅・行程", c:["休憩","滞在","遠足"]},
+
+    // --- 動詞 (Source 1: Q5, Q8-Q10) ---
+    {w:"disappeared", a:"消えた", c:["縮んだ","枯れた","落ちた"]},
+    {w:"wondered", a:"疑問に思った", c:["感心した","確信した","忘れた"]},
+    {w:"supposed", a:"〜することになっていた", c:["〜しようと試みた","〜するふりをした","〜することを許可した"]},
+    {w:"entered", a:"入った", c:["届いた","去った","隠れた"]},
+    {w:"erase", a:"消す", c:["削る","拭く","洗う"]},
+    {w:"rest", a:"休む", c:["働く","遊ぶ","急ぐ"]},
+    {w:"attend", a:"出席する", c:["準備する","反対する","協力する"]},
+    {w:"hire", a:"雇う", c:["褒める","叱る","頼む"]},
+    {w:"rate", a:"評価する", c:["比較する","分類する","記録する"]},
+    {w:"order", a:"注文する", c:["予約する","支払う","運搬する"]},
+    {w:"catch", a:"捕まえる", c:["見つける","見逃す","投げ出す"]},
+    {w:"hide", a:"隠す", c:["埋める","捨てる","壊す"]},
+    {w:"dry", a:"乾かす", c:["温める","冷やす","混ぜる"]},
+    {w:"heal", a:"治す", c:["鍛える","守る","冷ます"]},
+    {w:"chase", a:"追いかける", c:["待ち伏せる","逃げ出す","見失う"]},
+    {w:"accept", a:"受け入れる", c:["拒絶する","無視する","我慢する"]},
+
+    // --- 副詞・形容詞 (Source 1: Q6-Q7) ---
+    {w:"altogether", a:"全部で・合計で", c:["およそ","わずかに","概ね"]},
+    {w:"forward", a:"前方へ", c:["直ちに","徐々に","斜めに"]},
+    {w:"loudly", a:"大声で", c:["静かに","陽気に","丁寧に"]},
+    {w:"worldwide", a:"世界中で", c:["国内で","至近距離で","至る所で"]},
+    {w:"cheap", a:"安い", c:["軽い","古い","脆い"]},
+    {w:"cold", a:"冷たい", c:["辛い","苦い","酸っぱい"]},
+    {w:"shy", a:"内気な", c:["真面目な","頑固な","呑気な"]},
+    {w:"guilty", a:"有罪の", c:["無力な","不運な","卑怯な"]},
+
+    // --- 熟語・表現 (Source 2: Q11-Q15) ---
+    {w:"laugh at", a:"〜を笑う", c:["〜を慰める","〜を叱る","〜を呼ぶ"]},
+    {w:"take over", a:"引き継ぐ", c:["見直す","片付ける","追い出す"]},
+    {w:"come to", a:"〜になる", c:["〜を過ぎる","〜を離れる","〜に戻る"]},
+    {w:"point out", a:"指摘する", c:["強調する","誤解する","無視する"]},
+    {w:"all over", a:"〜の至る所に", c:["〜の真下に","〜の背後に","〜の真正面に"]},
+    {w:"just like", a:"まるで〜のように", c:["〜のおかげで","〜のせいで","〜とは対照的に"]},
+    {w:"up to", a:"〜まで", c:["〜の代わりに","〜に加えて","〜を除いて"]},
+    {w:"ahead of", a:"〜の先に", c:["〜の代わりに","〜と一緒に","〜の近くに"]},
+    {w:"make an excuse", a:"言い訳をする", c:["嘘をつく","約束を破る","文句を言う"]},
+    {w:"have a dream", a:"夢を見る", c:["希望を持つ","不安を感じる","計画を立てる"]},
+    {w:"have a word", a:"少し話をする", c:["意見を言う","噂を広める","秘密を守る"]},
+    {w:"make a start", a:"開始する", c:["決断する","準備する","完成させる"]},
+    {w:"as long as", a:"〜である限り", c:["〜した途端に","〜にもかかわらず","〜を除けば"]},
+    {w:"as soon as", a:"〜するとすぐに", c:["〜した後に","〜している間に","〜する前に"]},
+    {w:"even if", a:"たとえ〜でも", c:["〜だからといって","〜なはずがない","〜のせいか"]},
+    {w:"by the time", a:"〜するまでには", c:["〜からずっと","〜した時だけ","〜したおかげで"]},
+    {w:"succeeded in", a:"〜に成功した", c:["〜に従事した","〜を切望した","〜に専念した"]},
+    {w:"lived on", a:"〜で生活した", c:["〜で働いた","〜で学んだ","〜で旅した"]},
+    {w:"suffered from", a:"〜に苦しんだ", c:["〜に驚いた","〜に反対した","〜に関心を持った"]},
+    {w:"felt like", a:"〜したい気がした", c:["〜すべきだと思った","〜するのに慣れた","〜するのを忘れた"]}
+];
+
+let quizQueue = [...GeorgiaInspiredQuiz].sort(() => Math.random() - 0.5);
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = quizQueue[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / 60`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+    isFirstTry = true;
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) { firstTryCorrectCount++; }
+        document.getElementById('feedback').style.color = "var(--success-green)";
+        document.getElementById('feedback').textContent = "Excellent!";
+        setTimeout(() => {
+            currentIndex++;
+            if (currentIndex < 60) { loadQuestion(); } else { showResult(); }
+        }, 600);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: quizQueue[currentIndex].w, a: quizQueue[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Try again!";
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong><span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2025-3 準2級 語彙トレーニング結果報告");
+    let mistakeText = mistakes.length > 0 ? "\n\n■要復習リスト:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n") : "\n\n完璧です！";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n米国南部での感覚（purse = ハンドバッグ）を反映させた全60問のトレーニングを完了しました。\n\n結果: 60問中 ${firstTryCorrectCount} 問を一発正解。${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
