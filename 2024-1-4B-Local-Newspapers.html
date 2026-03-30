@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2024-1 4B Local Newspapers 準2級 Vocab Quiz</title>
+    <style>
+        :root {
+            --bg-color: #fdfaf1;
+            --primary-brown: #5d4037;
+            --accent-orange: #ff9800;
+            --soft-yellow: #fff176;
+            --leaf-green: #4caf50;
+            --text-dark: #3e2723;
+            --white: #ffffff;
+            --error-red: #d32f2f;
+            --base-font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "Yu Gothic", "Meiryo", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-brown);
+            color: var(--soft-yellow);
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 650px;
+            width: 90%;
+            margin: 30px 0;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 25px;
+            border: 3px solid var(--soft-yellow);
+            box-shadow: 0 8px 20px rgba(93, 64, 55, 0.1);
+            text-align: center;
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--leaf-green); margin-bottom: 15px; font-weight: bold; }
+        .word-display { font-size: 2.2rem; font-weight: bold; color: var(--primary-brown); margin: 15px 0 35px 0; border-bottom: 4px dotted var(--accent-orange); padding-bottom: 10px; }
+        .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--leaf-green);
+            padding: 18px 10px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-dark);
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover:not(:disabled) { background-color: #f1f8e9; transform: scale(1.02); border-color: var(--accent-orange); }
+        .choice-btn.wrong { background-color: #ffebee; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; opacity: 0.7; }
+        .choice-btn:disabled { cursor: default; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--accent-orange); font-weight: bold; }
+        .action-btn { background-color: var(--leaf-green); color: white; border: none; padding: 15px 40px; border-radius: 40px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        .mistake-list { text-align: left; background: #fffef0; padding: 15px; border-radius: 10px; border: 1px solid var(--soft-yellow); margin-top: 10px; }
+        .mistake-item { border-bottom: 1px solid #eee; padding: 5px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📰 2024-1 4B Local Newspapers 準2級 Vocab Quiz</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 23</div>
+    <div class="word-display" id="word-text">Loading...</div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.5em; font-weight: bold; font-size: 1.2rem;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一発正解：<span class="score-num" id="final-score">0</span> / 23</div>
+    <div id="mistake-container" style="display:none; text-align: left; margin-top: 25px;">
+        <h3 style="color: var(--error-red);">要復習リスト:</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を報告</button>
+    <button class="action-btn" style="background-color: #95a5a6;" onclick="location.reload()">もう一度挑戦</button>
+</div>
+
+<script>
+const NewspaperQuiz = [
+    {w:"regularly", a:"定期的に", c:["最近","常に","たまに"]},
+    {w:"company", a:"会社", c:["仲間","工場","集まり"]},
+    {w:"article", a:"記事", c:["広告","書類","物語"]},
+    {w:"put 〜 together", a:"〜をまとめる", c:["〜を分解する","〜を捨てる","〜を片付ける"]},
+    {w:"deliver", a:"〜を配達する", c:["〜を受け取る","〜を販売する","〜を注文する"]},
+    {w:"local", a:"地元の", c:["田舎の","国内の","都会の"]},
+    {w:"source", a:"情報源", c:["結果","道具","資源"]},
+    {w:"since", a:"〜以来", c:["〜まで","〜の間","〜の後に"]},
+    {w:"around", a:"およそ", c:["正確に","たった","最大で"]},
+    {w:"convenient", a:"便利な", c:["重要な","快適な","高価な"]},
+    {w:"popular", a:"人気のある", c:["一般的な","有名な","伝統的な"]},
+    {w:"focus (verb)", a:"焦点を当てる", c:["無視する","比較する","拡大する"]},
+    {w:"national", a:"全国的な", c:["国際的な","政府の","地元の"]},
+    {w:"as a result", a:"その結果", c:["一方で","例えば","ついに"]},
+    {w:"at the same time", a:"同時に", c:["その間に","後で","かつて"]},
+    {w:"because of this", a:"このため・そういう理由で", c:["その代わりに","それにもかかわらず","このようにして"]},
+    {w:"advertise", a:"宣伝する", c:["アドバイスする","発表する","不満を言う"]},
+    {w:"product", a:"製品", c:["材料","作品","プロジェクト"]},
+    {w:"by doing so", a:"そうすることで", c:["そうしなければ","その代わりに","そうする前に"]},
+    {w:"customer", a:"顧客", c:["店員","観光客","所有者"]},
+    {w:"without", a:"〜なしで", c:["〜と一緒に","〜を除いて","〜の外側に"]},
+    {w:"just like", a:"〜と同様に", c:["〜のおかげで","〜の代わりに","〜のせいで"]},
+    {w:"face (verb)", a:"直面する", c:["反対する","同意する","顔を出す"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = NewspaperQuiz[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${NewspaperQuiz.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    isFirstTry = true;
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+        }
+        document.getElementById('feedback').style.color = "var(--leaf-green)";
+        document.getElementById('feedback').textContent = "Excellent! ✨";
+        
+        // 全ボタン無効化して次へ
+        const buttons = document.querySelectorAll('.choice-btn');
+        buttons.forEach(b => b.disabled = true);
+        
+        setTimeout(nextQuestion, 800);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: NewspaperQuiz[currentIndex].w, a: NewspaperQuiz[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        btn.disabled = true;
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Try again!";
+    }
+}
+
+function nextQuestion() {
+    currentIndex++;
+    if (currentIndex < NewspaperQuiz.length) {
+        loadQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong> <span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2024-1 4B Local Newspaper 語彙クイズ結果");
+    let mistakeText = mistakes.length > 0 ? "\n\n■要復習単語:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n") : "\n\n全問一発正解でした！完璧です。";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n2024-1 準2級過去問語彙トレーニング(全${NewspaperQuiz.length}問)を完了しました。\n\n結果: 一発正解 ${firstTryCorrectCount} 問${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
