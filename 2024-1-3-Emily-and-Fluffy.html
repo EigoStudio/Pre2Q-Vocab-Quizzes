@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2024-1 3 Emily and Fluffy 準2級 Vocab Quiz</title>
+    <style>
+        :root {
+            --bg-color: #fff9f0;
+            --primary-brown: #6d4c41;
+            --accent-orange: #ffab40;
+            --soft-yellow: #ffe082;
+            --leaf-green: #81c784;
+            --text-dark: #4e342e;
+            --white: #ffffff;
+            --error-red: #e57373;
+            --base-font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "Yu Gothic", "Meiryo", sans-serif;
+        }
+
+        body {
+            font-family: var(--base-font);
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-brown);
+            color: var(--soft-yellow);
+            width: 100%;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 650px;
+            width: 90%;
+            margin: 30px 0;
+            background: var(--white);
+            padding: 30px;
+            border-radius: 25px;
+            border: 3px solid var(--soft-yellow);
+            box-shadow: 0 8px 20px rgba(109, 76, 65, 0.1);
+            text-align: center;
+        }
+
+        .progress-bar { font-size: 1rem; color: var(--leaf-green); margin-bottom: 15px; font-weight: bold; }
+        .word-display { font-size: 2.2rem; font-weight: bold; color: var(--primary-brown); margin: 15px 0 35px 0; border-bottom: 4px dotted var(--accent-orange); padding-bottom: 10px; }
+        .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .choice-btn {
+            background: var(--white);
+            border: 2px solid var(--leaf-green);
+            padding: 18px 10px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-dark);
+            font-family: var(--base-font);
+        }
+
+        .choice-btn:hover:not(:disabled) { background-color: #f1f8e9; transform: scale(1.02); border-color: var(--accent-orange); }
+        .choice-btn.wrong { background-color: #ffebee; border-color: var(--error-red); color: var(--error-red); animation: shake 0.3s; opacity: 0.7; }
+        .choice-btn:disabled { cursor: default; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        #result-screen { display: none; }
+        .score-num { font-size: 3.5rem; color: var(--accent-orange); font-weight: bold; }
+        .action-btn { background-color: var(--leaf-green); color: white; border: none; padding: 15px 40px; border-radius: 40px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        .mistake-list { text-align: left; background: #fffef0; padding: 15px; border-radius: 10px; border: 1px solid var(--soft-yellow); margin-top: 10px; }
+        .mistake-item { border-bottom: 1px solid #eee; padding: 5px 0; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🐰 2024-1 3 Emily and Fluffy 準2級 Vocab Quiz</h1>
+</header>
+
+<div class="container" id="quiz-screen">
+    <div class="progress-bar" id="progress">1 / 15</div>
+    <div class="word-display" id="word-text">Loading...</div>
+    <div class="choices-grid" id="choices-container"></div>
+    <div id="feedback" style="margin-top:20px; height: 1.5em; font-weight: bold; font-size: 1.2rem;"></div>
+</div>
+
+<div class="container" id="result-screen">
+    <h2>トレーニング終了！</h2>
+    <div>一発正解：<span class="score-num" id="final-score">0</span> / 15</div>
+    <div id="mistake-container" style="display:none; text-align: left; margin-top: 25px;">
+        <h3 style="color: var(--error-red);">要復習リスト:</h3>
+        <div class="mistake-list" id="mistake-list"></div>
+    </div>
+    <button class="action-btn" onclick="sendEmail()">Tamaki先生に結果を報告</button>
+    <button class="action-btn" style="background-color: #95a5a6;" onclick="location.reload()">もう一度挑戦</button>
+</div>
+
+<script>
+const EmilyQuiz = [
+    {w:"decide", a:"〜を決める", c:["〜を頼む","〜を覚える","〜を探す"]},
+    {w:"whether ... or ...", a:"〜かそれとも...か", c:["〜と...の両方","〜から...まで","〜の代わりに"]},
+    {w:"take care of", a:"〜の世話をする", c:["〜に注意する","〜を片付ける","〜を連れて行く"]},
+    {w:"thought", a:"〜と思った", c:["〜を教えた","〜を捕まえた","〜を運んだ"]},
+    {w:"name", a:"〜に名前をつける", c:["〜を呼ぶ","〜を知っている","〜を有名にする"]},
+    {w:"cage", a:"かご・おり", c:["庭","箱","巣"]},
+    {w:"feed", a:"〜に食べ物を与える", c:["〜を洗う","〜と遊ぶ","〜を訓練する"]},
+    {w:"find out", a:"〜を見つけ出す・知る", c:["〜を外に出す","〜を探し続ける","〜を失くす"]},
+    {w:"wrong", a:"間違った・悪い", c:["新しい","強い","長い"]},
+    {w:"right", a:"正しい・適切な", c:["明るい","軽い","速い"]},
+    {w:"feel better", a:"気分が良くなる", c:["より良く感じる","もっと欲しくなる","上手にできる"]},
+    {w:"look sick", a:"病気のように見える", c:["病気を探す","病気を怖がる","病気になる"]},
+    {w:"escape from", a:"〜から逃げる", c:["〜から離れる","〜に戻る","〜を卒業する"]},
+    {w:"electrical", a:"電気の", c:["電子の","便利な","高価な"]},
+    {w:"put away", a:"〜を片付ける", c:["〜を捨てる","〜を置く","〜を使い果たす"]}
+];
+
+let currentIndex = 0;
+let firstTryCorrectCount = 0;
+let isFirstTry = true;
+let mistakes = [];
+
+function loadQuestion() {
+    const current = EmilyQuiz[currentIndex];
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${EmilyQuiz.length}`;
+    document.getElementById('word-text').textContent = current.w;
+    document.getElementById('feedback').textContent = "";
+    isFirstTry = true;
+    
+    const container = document.getElementById('choices-container');
+    container.innerHTML = '';
+
+    const choices = [current.a, ...current.c].sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice, current.a, btn);
+        container.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (selected === correct) {
+        if (isFirstTry) {
+            firstTryCorrectCount++;
+        }
+        document.getElementById('feedback').style.color = "var(--leaf-green)";
+        document.getElementById('feedback').textContent = "Great job! 🐾";
+        
+        const buttons = document.querySelectorAll('.choice-btn');
+        buttons.forEach(b => b.disabled = true);
+        
+        setTimeout(nextQuestion, 800);
+    } else {
+        if (isFirstTry) {
+            mistakes.push({w: EmilyQuiz[currentIndex].w, a: EmilyQuiz[currentIndex].a});
+            isFirstTry = false;
+        }
+        btn.classList.add('wrong');
+        btn.disabled = true;
+        document.getElementById('feedback').style.color = "var(--error-red)";
+        document.getElementById('feedback').textContent = "Try again!";
+    }
+}
+
+function nextQuestion() {
+    currentIndex++;
+    if (currentIndex < EmilyQuiz.length) {
+        loadQuestion();
+    } else {
+        showResult();
+    }
+}
+
+function showResult() {
+    document.getElementById('quiz-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    document.getElementById('final-score').textContent = firstTryCorrectCount;
+    
+    if (mistakes.length > 0) {
+        document.getElementById('mistake-container').style.display = 'block';
+        document.getElementById('mistake-list').innerHTML = mistakes.map(m => `
+            <div class="mistake-item"><strong>${m.w}</strong> <span>${m.a}</span></div>
+        `).join('');
+    }
+}
+
+function sendEmail() {
+    const teacherEmail = "tamaki@eigostudio-stepforward.com";
+    const subject = encodeURIComponent("2024-1 3 Emily and Fluffy 語彙クイズ結果");
+    let mistakeText = mistakes.length > 0 ? "\n\n■要復習単語:\n" + mistakes.map(m => `・${m.w} (${m.a})`).join("\n") : "\n\n全問一発正解でした！";
+    const body = encodeURIComponent(`Tamaki先生へ\n\n読解問題「Emily and Fluffy」の語彙復習(全${EmilyQuiz.length}問)を完了しました。\n\n結果: 一発正解 ${firstTryCorrectCount} 問${mistakeText}`);
+    window.location.href = `mailto:${teacherEmail}?subject=${subject}&body=${body}`;
+}
+
+window.onload = loadQuestion;
+</script>
+</body>
+</html>
